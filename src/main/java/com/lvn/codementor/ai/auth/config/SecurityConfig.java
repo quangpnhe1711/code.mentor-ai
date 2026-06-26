@@ -27,6 +27,8 @@ public class SecurityConfig {
         http.csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.GET, "/api/auth/github/login", "/api/auth/github/callback")
+                        .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/github/provision/dev").permitAll()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll())

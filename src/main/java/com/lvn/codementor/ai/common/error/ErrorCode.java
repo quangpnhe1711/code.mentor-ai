@@ -39,6 +39,12 @@ public enum ErrorCode {
     /** No GitHub provider connection exists for the user; required before import/sync (BR-REP-003). */
     PROVIDER_CONNECTION_REQUIRED(HttpStatus.CONFLICT),
 
+    /** OAuth callback {@code state} missing/unknown/expired — likely CSRF or a stale flow. */
+    GITHUB_OAUTH_STATE_INVALID(HttpStatus.BAD_REQUEST),
+
+    /** A call to the GitHub API failed upstream (token exchange, profile, or repo listing). */
+    GITHUB_INTEGRATION_ERROR(HttpStatus.BAD_GATEWAY),
+
     /** Provider-token encryption/decryption failed; detail is never leaked (ADR-011). */
     CREDENTIAL_CRYPTO_ERROR(HttpStatus.INTERNAL_SERVER_ERROR),
 

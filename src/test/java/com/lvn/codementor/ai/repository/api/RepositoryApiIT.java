@@ -2,11 +2,16 @@ package com.lvn.codementor.ai.repository.api;
 import com.lvn.codementor.ai.repository.api.request.ImportRepositoryRequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.lvn.codementor.ai.common.error.AppException;
+import com.lvn.codementor.ai.common.error.ErrorCode;
 import com.lvn.codementor.ai.auth.application.ProvisioningOutcome;
 import com.lvn.codementor.ai.identity.domain.User;
 import com.lvn.codementor.ai.identity.persistence.UserJpaRepository;
@@ -51,6 +56,21 @@ class RepositoryApiIT extends AbstractWebIT {
                 .andExpect(jsonPath("$.data.id").isNotEmpty())
                 .andExpect(jsonPath("$.data.status").value("ACTIVE"))
                 .andExpect(jsonPath("$.data.errorReason").doesNotExist());
+    }
+
+    @Test
+    void importReturnsAccessDeniedWhenGitHubRejects() throws Exception {
+        ProvisioningOutcome user = provision("gh-" + UUID.randomUUID(), "token");
+        String deniedRepoId = "ext-" + UUID.randomUUID();
+        // The real GitHubRepositoryAccessVerifier delegates to the (mocked) GitHub client; simulate
+        // GitHub reporting the repository as inaccessible/not found.
+        doThrow(new AppException(ErrorCode.REPOSITORY_ACCESS_DENIED, "Repository is not accessible"))
+                .when(gitHubRepositoryClient)
+                .verifyRepositoryAccess(anyString(), eq(deniedRepoId));
+
+        postImport(user, user.personalOrganizationId(), deniedRepoId)
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error.code").value("REPOSITORY_ACCESS_DENIED"));
     }
 
     @Test

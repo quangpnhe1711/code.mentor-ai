@@ -3,20 +3,17 @@ package com.lvn.codementor.ai.repository.persistence;
 import com.lvn.codementor.ai.repository.application.port.GitRepositoryAccessVerifier;
 import com.lvn.codementor.ai.repository.domain.RepositoryProvider;
 import java.util.UUID;
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
- * Dev implementation that permits all access.
+ * Permissive (no-op) verifier for local dev only. <strong>Not the default.</strong>
  *
- * <p>Guarded by {@code @Profile("!prod")} so it is wired in dev/test/default runs but NEVER in a
- * production-like profile. A production deployment must provide a real GitHub-API-backed verifier.
- *
- * <p>TODO: replace with a real GitHub-API-backed verifier that confirms the user can access the
- * repository (BR-REP-001) and raises {@code REPOSITORY_ACCESS_DENIED} otherwise. No network call is
- * made in this phase.
+ * <p>Active only when {@code codementor.github.access-verifier=permissive}; otherwise the real
+ * {@link GitHubRepositoryAccessVerifier} is wired. Provided so a developer can exercise the import
+ * flow without GitHub credentials. It must never be selected in production.
  */
-@Profile("!prod")
+@ConditionalOnProperty(name = "codementor.github.access-verifier", havingValue = "permissive")
 @Component
 public class PermissiveGitRepositoryAccessVerifier implements GitRepositoryAccessVerifier {
 
