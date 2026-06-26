@@ -29,6 +29,7 @@
 	<properties>
 		<java.version>21</java.version>
 		<jjwt.version>0.12.6</jjwt.version>
+		<jgit.version>6.10.0.202406032230-r</jgit.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -79,6 +80,13 @@
 			<artifactId>jjwt-jackson</artifactId>
 			<version>${jjwt.version}</version>
 			<scope>runtime</scope>
+		</dependency>
+
+		<!-- JGit: clone imported repositories for snapshot preparation (no native git required). -->
+		<dependency>
+			<groupId>org.eclipse.jgit</groupId>
+			<artifactId>org.eclipse.jgit</artifactId>
+			<version>${jgit.version}</version>
 		</dependency>
 
 		<dependency>

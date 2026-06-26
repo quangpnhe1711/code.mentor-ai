@@ -7,6 +7,7 @@ import com.lvn.codementor.ai.auth.application.ProvisioningOutcome;
 import com.lvn.codementor.ai.github.application.port.GitHubOAuthClient;
 import com.lvn.codementor.ai.github.application.port.GitHubRepositoryClient;
 import com.lvn.codementor.ai.github.application.port.GitHubUserClient;
+import com.lvn.codementor.ai.github.application.port.GitRepositoryCloneClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -39,6 +40,9 @@ public abstract class AbstractWebIT extends AbstractPostgresIT {
 
     @MockitoBean
     protected GitHubRepositoryClient gitHubRepositoryClient;
+
+    @MockitoBean
+    protected GitRepositoryCloneClient gitRepositoryCloneClient;
 
     /** Provision a user (creating personal org, membership, and a GitHub connection) and return tokens. */
     protected ProvisioningOutcome provision(String githubUserId, String accessToken) {
