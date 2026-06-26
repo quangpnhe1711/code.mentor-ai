@@ -1,0 +1,4 @@
+/**
+ * Spring Data JPA repositories and persistence adapters for the identity module.
+ */
+package com.lvn.codementor.ai.identity.persistence;

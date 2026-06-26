@@ -4,11 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.lvn.codementor.ai.repository.Repository;
-import com.lvn.codementor.ai.repository.RepositoryJpaRepository;
-import com.lvn.codementor.ai.repository.RepositoryProvider;
-import com.lvn.codementor.ai.repository.RepositoryStatus;
-import com.lvn.codementor.ai.repository.RepositoryVisibility;
+import com.lvn.codementor.ai.repository.domain.ImportedRepository;
+import com.lvn.codementor.ai.repository.persistence.ImportedRepositoryJpaRepository;
+import com.lvn.codementor.ai.repository.domain.RepositoryProvider;
+import com.lvn.codementor.ai.repository.domain.RepositoryStatus;
+import com.lvn.codementor.ai.repository.domain.RepositoryVisibility;
 import com.lvn.codementor.ai.support.AbstractPostgresIT;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -32,7 +32,7 @@ class FoundationSchemaIT extends AbstractPostgresIT {
     JdbcTemplate jdbc;
 
     @Autowired
-    RepositoryJpaRepository repositories;
+    ImportedRepositoryJpaRepository repositories;
 
     @PersistenceContext
     EntityManager entityManager;
@@ -106,7 +106,7 @@ class FoundationSchemaIT extends AbstractPostgresIT {
         UUID org = insertOrg(user, "PERSONAL", "err-org");
         UUID conn = insertConnection(user, "err-acct");
 
-        Repository repo = new Repository(
+        ImportedRepository repo = new ImportedRepository(
                 org, conn, RepositoryProvider.GITHUB, "err-ext", "owner", "repo", "owner/repo",
                 RepositoryVisibility.PRIVATE, user);
         repo.markFailed(RepositoryStatus.FAILED, "clone failed: authentication error");
@@ -114,7 +114,7 @@ class FoundationSchemaIT extends AbstractPostgresIT {
 
         // Reload from the database to confirm the column round-trips.
         entityManager.clear();
-        Repository reloaded = repositories.findById(repoId).orElseThrow();
+        ImportedRepository reloaded = repositories.findById(repoId).orElseThrow();
         assertThat(reloaded.getStatus()).isEqualTo(RepositoryStatus.FAILED);
         assertThat(reloaded.getErrorReason()).isEqualTo("clone failed: authentication error");
     }
