@@ -57,6 +57,9 @@ public enum ErrorCode {
     /** Building the sanitized analysis input failed; detail is safe (no path/content/secret). */
     CODE_ANALYSIS_INPUT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR),
 
+    /** An analysis input must be READY before a review job can be created from it. */
+    CODE_ANALYSIS_INPUT_NOT_READY(HttpStatus.CONFLICT),
+
     /** Unexpected failure. */
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR);
 
