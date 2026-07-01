@@ -51,6 +51,12 @@ public enum ErrorCode {
     /** First-login personal-org provisioning failed; transaction rolled back (ADR-010). */
     PROVISIONING_FAILED(HttpStatus.INTERNAL_SERVER_ERROR),
 
+    /** A snapshot must be READY before a sanitized analysis input can be built from it. */
+    SNAPSHOT_NOT_READY(HttpStatus.CONFLICT),
+
+    /** Building the sanitized analysis input failed; detail is safe (no path/content/secret). */
+    CODE_ANALYSIS_INPUT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR),
+
     /** Unexpected failure. */
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR);
 
