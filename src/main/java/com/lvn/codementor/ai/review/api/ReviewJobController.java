@@ -6,6 +6,7 @@ import com.lvn.codementor.ai.review.api.request.CreateReviewJobRequest;
 import com.lvn.codementor.ai.review.api.response.ReviewFindingResponse;
 import com.lvn.codementor.ai.review.api.response.ReviewJobEventResponse;
 import com.lvn.codementor.ai.review.api.response.ReviewJobResponse;
+import com.lvn.codementor.ai.review.application.ReviewJobExecutionService;
 import com.lvn.codementor.ai.review.application.ReviewJobService;
 import com.lvn.codementor.ai.review.application.command.CreateReviewJobCommand;
 import com.lvn.codementor.ai.review.application.result.CreateReviewJobResult;
@@ -32,10 +33,15 @@ public class ReviewJobController {
 
     private final CurrentUser currentUser;
     private final ReviewJobService reviewJobService;
+    private final ReviewJobExecutionService executionService;
 
-    public ReviewJobController(CurrentUser currentUser, ReviewJobService reviewJobService) {
+    public ReviewJobController(
+            CurrentUser currentUser,
+            ReviewJobService reviewJobService,
+            ReviewJobExecutionService executionService) {
         this.currentUser = currentUser;
         this.reviewJobService = reviewJobService;
+        this.executionService = executionService;
     }
 
     @PostMapping("/analysis-inputs/{analysisInputId}/review-jobs")
@@ -51,6 +57,17 @@ public class ReviewJobController {
         ApiResponse<ReviewJobResponse> body =
                 ApiResponse.ok(ReviewJobResponse.from(result.job()), requestId());
         return ResponseEntity.status(HttpStatus.CREATED).body(body);
+    }
+
+    @PostMapping("/review-jobs/{reviewJobId}/run")
+    public ApiResponse<ReviewJobResponse> runReviewJob(
+            @PathVariable UUID organizationId,
+            @PathVariable UUID repositoryId,
+            @PathVariable UUID reviewJobId) {
+        UUID userId = currentUser.requireUserId();
+        ReviewJobResponse data = ReviewJobResponse.from(
+                executionService.run(userId, organizationId, repositoryId, reviewJobId).job());
+        return ApiResponse.ok(data, requestId());
     }
 
     @GetMapping("/review-jobs")

@@ -60,6 +60,9 @@ public enum ErrorCode {
     /** An analysis input must be READY before a review job can be created from it. */
     CODE_ANALYSIS_INPUT_NOT_READY(HttpStatus.CONFLICT),
 
+    /** A review job can only be run from the QUEUED state. */
+    REVIEW_JOB_NOT_RUNNABLE(HttpStatus.CONFLICT),
+
     /** Unexpected failure. */
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR);
 

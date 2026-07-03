@@ -14,8 +14,8 @@ import java.util.UUID;
  * but <strong>no findings are generated in this phase</strong> — the future worker/AI phase populates
  * it. Carries only a file path and structured metadata, never source content.
  *
- * <p>ponytail: JPA-only (no public constructor) — nothing creates findings yet; add a constructor when
- * the worker phase lands.
+ * <p>The {@code file_path} and structured fields carry no source snippet — descriptions are generic
+ * per rule so no source content is ever persisted.
  */
 @Entity
 @Table(name = "review_findings")
@@ -63,6 +63,35 @@ public class ReviewFinding extends BaseEntity {
 
     protected ReviewFinding() {
         // for JPA
+    }
+
+    public ReviewFinding(
+            UUID reviewJobId,
+            UUID organizationId,
+            UUID repositoryId,
+            String filePath,
+            Integer lineStart,
+            Integer lineEnd,
+            ReviewFindingSeverity severity,
+            String category,
+            String title,
+            String description,
+            String suggestion,
+            String ruleId,
+            BigDecimal confidence) {
+        this.reviewJobId = reviewJobId;
+        this.organizationId = organizationId;
+        this.repositoryId = repositoryId;
+        this.filePath = filePath;
+        this.lineStart = lineStart;
+        this.lineEnd = lineEnd;
+        this.severity = severity;
+        this.category = category;
+        this.title = title;
+        this.description = description;
+        this.suggestion = suggestion;
+        this.ruleId = ruleId;
+        this.confidence = confidence;
     }
 
     public UUID getReviewJobId() {

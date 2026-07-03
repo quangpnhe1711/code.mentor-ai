@@ -91,6 +91,33 @@ public class ReviewJob extends BaseEntity {
         this.totalFindings = 0;
     }
 
+    /** QUEUED → RUNNING when execution starts. */
+    public void markRunning() {
+        this.status = ReviewJobStatus.RUNNING;
+        this.startedAt = Instant.now();
+        this.errorReason = null;
+    }
+
+    /** RUNNING → COMPLETED once findings are persisted. {@code totalFindings} must equal the row count. */
+    public void markCompleted(int totalFindings) {
+        this.status = ReviewJobStatus.COMPLETED;
+        this.totalFindings = totalFindings;
+        this.completedAt = Instant.now();
+        this.errorReason = null;
+    }
+
+    /** Terminal failure. {@code reason} must be safe (no path, content, secret, or stack trace). */
+    public void markFailed(String reason) {
+        this.status = ReviewJobStatus.FAILED;
+        this.errorReason = reason;
+        this.completedAt = Instant.now();
+    }
+
+    /** Whether this job may transition to RUNNING (only a QUEUED job is runnable). */
+    public boolean isRunnable() {
+        return this.status == ReviewJobStatus.QUEUED;
+    }
+
     public UUID getOrganizationId() {
         return organizationId;
     }
