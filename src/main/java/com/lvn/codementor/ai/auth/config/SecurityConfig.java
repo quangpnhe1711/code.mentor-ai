@@ -30,6 +30,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/auth/github/login", "/api/auth/github/callback")
                         .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/github/provision/dev").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/webhooks/github").permitAll()
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui.html",
+                                "/swagger-ui/**")
+                        .permitAll()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll())
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(authenticationEntryPoint))

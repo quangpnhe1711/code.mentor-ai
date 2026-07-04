@@ -151,6 +151,8 @@ class ReviewJobApiIT extends AbstractWebIT {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.status").value("QUEUED"))
                 .andExpect(jsonPath("$.data.reviewType").value("FULL_REPOSITORY"))
+                .andExpect(jsonPath("$.data.targetPullRequestNumber").doesNotExist())
+                .andExpect(jsonPath("$.data.targetRef").doesNotExist())
                 .andExpect(jsonPath("$.data.inputHash").value(KNOWN_HASH))
                 .andExpect(jsonPath("$.data.analysisInputId").value(input.getId().toString()))
                 .andExpect(jsonPath("$.data.snapshotId").value(input.getSnapshotId().toString()))
@@ -167,6 +169,73 @@ class ReviewJobApiIT extends AbstractWebIT {
         mockMvc.perform(post(createUrl(user.personalOrganizationId(), repo.getId(), input.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"reviewType\":\"SINGLE_FILE\"}")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(user.tokens().accessToken())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"));
+    }
+
+    @Test
+    void createsPullRequestReviewJobWithTargetNumber() throws Exception {
+        ProvisioningOutcome user = provision("gh-" + UUID.randomUUID(), "gho_x");
+        ImportedRepository repo = persistRepository(user);
+        CodeAnalysisInput input = readyInput(user, repo);
+
+        mockMvc.perform(post(createUrl(user.personalOrganizationId(), repo.getId(), input.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reviewType\":\"PULL_REQUEST\",\"targetPullRequestNumber\":17}")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(user.tokens().accessToken())))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.reviewType").value("PULL_REQUEST"))
+                .andExpect(jsonPath("$.data.targetPullRequestNumber").value(17))
+                .andExpect(jsonPath("$.data.targetRef").doesNotExist());
+    }
+
+    @Test
+    void pullRequestReviewRequiresPositiveTargetNumber() throws Exception {
+        ProvisioningOutcome user = provision("gh-" + UUID.randomUUID(), "gho_x");
+        ImportedRepository repo = persistRepository(user);
+        CodeAnalysisInput input = readyInput(user, repo);
+
+        mockMvc.perform(post(createUrl(user.personalOrganizationId(), repo.getId(), input.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reviewType\":\"PULL_REQUEST\"}")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(user.tokens().accessToken())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"));
+
+        mockMvc.perform(post(createUrl(user.personalOrganizationId(), repo.getId(), input.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reviewType\":\"PULL_REQUEST\",\"targetPullRequestNumber\":0}")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(user.tokens().accessToken())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"));
+    }
+
+    @Test
+    void createsBranchReviewJobWithTargetRef() throws Exception {
+        ProvisioningOutcome user = provision("gh-" + UUID.randomUUID(), "gho_x");
+        ImportedRepository repo = persistRepository(user);
+        CodeAnalysisInput input = readyInput(user, repo);
+
+        mockMvc.perform(post(createUrl(user.personalOrganizationId(), repo.getId(), input.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reviewType\":\"BRANCH\",\"targetRef\":\" feature/review \"}")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(user.tokens().accessToken())))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.reviewType").value("BRANCH"))
+                .andExpect(jsonPath("$.data.targetRef").value("feature/review"))
+                .andExpect(jsonPath("$.data.targetPullRequestNumber").doesNotExist());
+    }
+
+    @Test
+    void branchReviewRequiresTargetRef() throws Exception {
+        ProvisioningOutcome user = provision("gh-" + UUID.randomUUID(), "gho_x");
+        ImportedRepository repo = persistRepository(user);
+        CodeAnalysisInput input = readyInput(user, repo);
+
+        mockMvc.perform(post(createUrl(user.personalOrganizationId(), repo.getId(), input.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reviewType\":\"BRANCH\"}")
                         .header(HttpHeaders.AUTHORIZATION, bearer(user.tokens().accessToken())))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"));

@@ -3,6 +3,8 @@ package com.lvn.codementor.ai.organization.application;
 import com.lvn.codementor.ai.organization.persistence.OrganizationMemberJpaRepository;
 import com.lvn.codementor.ai.common.error.AppException;
 import com.lvn.codementor.ai.common.error.ErrorCode;
+import com.lvn.codementor.ai.organization.domain.OrganizationMember;
+import com.lvn.codementor.ai.organization.domain.OrganizationRole;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 
@@ -29,5 +31,15 @@ public class OrganizationAccessService {
         members.findByOrganizationIdAndUserId(organizationId, userId)
                 .orElseThrow(() -> new AppException(
                         ErrorCode.FORBIDDEN, "You are not a member of this organization"));
+    }
+
+    /** Ensure the user can administer membership in the organization. */
+    public void requireAdmin(UUID userId, UUID organizationId) {
+        OrganizationMember member = members.findByOrganizationIdAndUserId(organizationId, userId)
+                .orElseThrow(() -> new AppException(
+                        ErrorCode.FORBIDDEN, "You are not a member of this organization"));
+        if (member.getRole() != OrganizationRole.OWNER && member.getRole() != OrganizationRole.ADMIN) {
+            throw new AppException(ErrorCode.FORBIDDEN, "You cannot administer this organization");
+        }
     }
 }

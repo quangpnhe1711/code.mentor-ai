@@ -14,8 +14,9 @@ import java.util.UUID;
  * but <strong>no findings are generated in this phase</strong> — the future worker/AI phase populates
  * it. Carries only a file path and structured metadata, never source content.
  *
- * <p>The {@code file_path} and structured fields carry no source snippet — descriptions are generic
- * per rule so no source content is ever persisted.
+ * <p>The {@code code_snippet} column holds the offending line (already secret-masked; the secret rule
+ * additionally redacts the matched value), so a reviewer can see the exact code. It is nullable —
+ * AI-provider findings do not include a snippet.
  */
 @Entity
 @Table(name = "review_findings")
@@ -61,6 +62,9 @@ public class ReviewFinding extends BaseEntity {
     @Column(name = "confidence")
     private BigDecimal confidence;
 
+    @Column(name = "code_snippet")
+    private String codeSnippet;
+
     protected ReviewFinding() {
         // for JPA
     }
@@ -78,7 +82,8 @@ public class ReviewFinding extends BaseEntity {
             String description,
             String suggestion,
             String ruleId,
-            BigDecimal confidence) {
+            BigDecimal confidence,
+            String codeSnippet) {
         this.reviewJobId = reviewJobId;
         this.organizationId = organizationId;
         this.repositoryId = repositoryId;
@@ -92,6 +97,7 @@ public class ReviewFinding extends BaseEntity {
         this.suggestion = suggestion;
         this.ruleId = ruleId;
         this.confidence = confidence;
+        this.codeSnippet = codeSnippet;
     }
 
     public UUID getReviewJobId() {
@@ -144,5 +150,9 @@ public class ReviewFinding extends BaseEntity {
 
     public BigDecimal getConfidence() {
         return confidence;
+    }
+
+    public String getCodeSnippet() {
+        return codeSnippet;
     }
 }

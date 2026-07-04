@@ -6,9 +6,12 @@ import com.lvn.codementor.ai.common.error.ErrorCode;
 import com.lvn.codementor.ai.github.application.GitHubRepositorySummary;
 import com.lvn.codementor.ai.github.application.port.GitHubRepositoryClient;
 import com.lvn.codementor.ai.github.config.GitHubProperties;
-import java.util.Arrays;
+import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -25,40 +28,53 @@ import org.springframework.web.client.RestClientResponseException;
  *
  * Status mapping: 401 → {@link ErrorCode#TOKEN_EXPIRED}; 403/404 → {@link ErrorCode#REPOSITORY_ACCESS_DENIED};
  * anything else → {@link ErrorCode#GITHUB_INTEGRATION_ERROR}. The token is never logged or echoed.
- *
- * <p>TBD: pagination beyond the first {@code per_page=100} page is not yet handled.
  */
 @Component
 public class GitHubHttpRepositoryClient implements GitHubRepositoryClient {
 
+    private static final String FIRST_REPOSITORIES_PAGE = "/user/repos?per_page=100&sort=updated";
+    private static final String NEXT_REL = "rel=\"next\"";
+
     private final RestClient restClient;
 
+    @Autowired
     public GitHubHttpRepositoryClient(GitHubProperties properties) {
-        this.restClient = RestClient.builder()
+        this(RestClient.builder()
                 .baseUrl(properties.apiBaseUrl())
                 .defaultHeader(HttpHeaders.ACCEPT, "application/vnd.github+json")
-                .build();
+                .build());
+    }
+
+    GitHubHttpRepositoryClient(RestClient restClient) {
+        this.restClient = restClient;
     }
 
     @Override
     public List<GitHubRepositorySummary> listRepositories(String accessToken) {
-        RepoResponse[] repos;
+        List<GitHubRepositorySummary> summaries = new ArrayList<>();
+        String nextUri = FIRST_REPOSITORIES_PAGE;
         try {
-            repos = restClient
-                    .get()
-                    .uri("/user/repos?per_page=100&sort=updated")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-                    .retrieve()
-                    .body(RepoResponse[].class);
+            while (nextUri != null) {
+                ResponseEntity<RepoResponse[]> response = restClient
+                        .get()
+                        .uri(nextUri)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                        .retrieve()
+                        .toEntity(RepoResponse[].class);
+                RepoResponse[] repos = response.getBody();
+                if (repos != null) {
+                    for (RepoResponse repo : repos) {
+                        summaries.add(toSummary(repo));
+                    }
+                }
+                nextUri = nextPageUri(response.getHeaders().getFirst(HttpHeaders.LINK));
+            }
         } catch (RestClientResponseException e) {
             throw mapStatus(e.getStatusCode());
         } catch (RestClientException e) {
             throw new AppException(ErrorCode.GITHUB_INTEGRATION_ERROR, "GitHub repository listing failed");
         }
-        if (repos == null) {
-            return List.of();
-        }
-        return Arrays.stream(repos).map(GitHubHttpRepositoryClient::toSummary).toList();
+        return List.copyOf(summaries);
     }
 
     @Override
@@ -110,6 +126,33 @@ public class GitHubHttpRepositoryClient implements GitHubRepositoryClient {
                 r.defaultBranch(),
                 r.htmlUrl(),
                 isPrivate);
+    }
+
+    private static String nextPageUri(String linkHeader) {
+        if (linkHeader == null || linkHeader.isBlank()) {
+            return null;
+        }
+        for (String part : linkHeader.split(",")) {
+            if (!part.contains(NEXT_REL)) {
+                continue;
+            }
+            int start = part.indexOf('<');
+            int end = part.indexOf('>', start + 1);
+            if (start < 0 || end <= start) {
+                return null;
+            }
+            return normalizeUri(part.substring(start + 1, end));
+        }
+        return null;
+    }
+
+    private static String normalizeUri(String rawUri) {
+        URI uri = URI.create(rawUri);
+        if (!uri.isAbsolute()) {
+            return rawUri;
+        }
+        String query = uri.getRawQuery();
+        return query == null ? uri.getRawPath() : uri.getRawPath() + "?" + query;
     }
 
     private record RepoResponse(

@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: codementor-ai-postgres
+    environment:
+      POSTGRES_DB: codementor_ai
+      POSTGRES_USER: codementor
+      POSTGRES_PASSWORD: codementor
+    ports:
+      - "55432:5432"
+    volumes:
+      - codementor_ai_postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U codementor -d codementor_ai"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  codementor_ai_postgres_data:

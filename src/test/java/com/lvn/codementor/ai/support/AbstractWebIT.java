@@ -5,6 +5,8 @@ import com.lvn.codementor.ai.auth.application.FirstLoginProvisioningService;
 import com.lvn.codementor.ai.auth.application.GitHubOAuthResult;
 import com.lvn.codementor.ai.auth.application.ProvisioningOutcome;
 import com.lvn.codementor.ai.github.application.port.GitHubOAuthClient;
+import com.lvn.codementor.ai.github.application.port.GitHubPullRequestClient;
+import com.lvn.codementor.ai.github.application.port.GitHubPullRequestCommentClient;
 import com.lvn.codementor.ai.github.application.port.GitHubRepositoryClient;
 import com.lvn.codementor.ai.github.application.port.GitHubUserClient;
 import com.lvn.codementor.ai.github.application.port.GitRepositoryCloneClient;
@@ -40,6 +42,12 @@ public abstract class AbstractWebIT extends AbstractPostgresIT {
 
     @MockitoBean
     protected GitHubRepositoryClient gitHubRepositoryClient;
+
+    @MockitoBean
+    protected GitHubPullRequestClient gitHubPullRequestClient;
+
+    @MockitoBean
+    protected GitHubPullRequestCommentClient gitHubPullRequestCommentClient;
 
     @MockitoBean
     protected GitRepositoryCloneClient gitRepositoryCloneClient;

@@ -18,6 +18,8 @@ public record ReviewJobResponse(
         UUID analysisInputId,
         ReviewJobStatus status,
         ReviewType reviewType,
+        Integer targetPullRequestNumber,
+        String targetRef,
         String inputHash,
         String aiProvider,
         String aiModel,
@@ -26,6 +28,10 @@ public record ReviewJobResponse(
         String errorReason,
         Instant startedAt,
         Instant completedAt,
+        int attemptCount,
+        int maxAttempts,
+        Instant nextRunAt,
+        String lastFailureReason,
         Instant createdAt,
         Instant updatedAt) {
 
@@ -38,6 +44,8 @@ public record ReviewJobResponse(
                 job.getAnalysisInputId(),
                 job.getStatus(),
                 job.getReviewType(),
+                job.getTargetPullRequestNumber(),
+                job.getTargetRef(),
                 job.getInputHash(),
                 job.getAiProvider(),
                 job.getAiModel(),
@@ -46,6 +54,10 @@ public record ReviewJobResponse(
                 job.getErrorReason(),
                 job.getStartedAt(),
                 job.getCompletedAt(),
+                job.getAttemptCount(),
+                job.getMaxAttempts(),
+                job.getNextRunAt(),
+                job.getLastFailureReason(),
                 job.getCreatedAt(),
                 job.getUpdatedAt());
     }

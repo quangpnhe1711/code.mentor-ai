@@ -63,6 +63,9 @@ public enum ErrorCode {
     /** A review job can only be run from the QUEUED state. */
     REVIEW_JOB_NOT_RUNNABLE(HttpStatus.CONFLICT),
 
+    /** A pull-request review is already queued or running (BR-REV-003). */
+    REVIEW_ALREADY_RUNNING(HttpStatus.CONFLICT),
+
     /** Unexpected failure. */
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR);
 

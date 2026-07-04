@@ -16,6 +16,8 @@ public interface ImportedRepositoryJpaRepository extends JpaRepository<ImportedR
     /** All repositories owned by an organization (listing). */
     List<ImportedRepository> findByOrganizationId(UUID organizationId);
 
+    List<ImportedRepository> findByProviderAndExternalRepoId(RepositoryProvider provider, String externalRepoId);
+
     /** A repository scoped to its owning organization (detail; enforces org ownership). */
     Optional<ImportedRepository> findByIdAndOrganizationId(UUID id, UUID organizationId);
 }

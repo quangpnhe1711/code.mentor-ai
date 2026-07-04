@@ -9,7 +9,9 @@ import com.lvn.codementor.ai.review.api.response.ReviewJobResponse;
 import com.lvn.codementor.ai.review.application.ReviewJobExecutionService;
 import com.lvn.codementor.ai.review.application.ReviewJobService;
 import com.lvn.codementor.ai.review.application.command.CreateReviewJobCommand;
+import com.lvn.codementor.ai.review.application.command.ReviewFindingFilter;
 import com.lvn.codementor.ai.review.application.result.CreateReviewJobResult;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -52,8 +55,16 @@ public class ReviewJobController {
             @RequestBody(required = false) CreateReviewJobRequest request) {
         UUID userId = currentUser.requireUserId();
         String reviewType = request == null ? null : request.reviewType();
-        CreateReviewJobResult result = reviewJobService.create(
-                new CreateReviewJobCommand(userId, organizationId, repositoryId, analysisInputId, reviewType));
+        Integer targetPullRequestNumber = request == null ? null : request.targetPullRequestNumber();
+        String targetRef = request == null ? null : request.targetRef();
+        CreateReviewJobResult result = reviewJobService.create(new CreateReviewJobCommand(
+                userId,
+                organizationId,
+                repositoryId,
+                analysisInputId,
+                reviewType,
+                targetPullRequestNumber,
+                targetRef));
         ApiResponse<ReviewJobResponse> body =
                 ApiResponse.ok(ReviewJobResponse.from(result.job()), requestId());
         return ResponseEntity.status(HttpStatus.CREATED).body(body);
@@ -95,10 +106,23 @@ public class ReviewJobController {
     public ApiResponse<List<ReviewFindingResponse>> listFindings(
             @PathVariable UUID organizationId,
             @PathVariable UUID repositoryId,
-            @PathVariable UUID reviewJobId) {
+            @PathVariable UUID reviewJobId,
+            HttpServletRequest request) {
         UUID userId = currentUser.requireUserId();
+        String severity = request.getParameter("severity");
+        String category = request.getParameter("category");
+        String type = request.getParameter("type");
+        String filePath = request.getParameter("filePath");
+        String effectiveCategory = category == null ? type : category;
         List<ReviewFindingResponse> data =
-                reviewJobService.listFindings(userId, organizationId, repositoryId, reviewJobId).stream()
+                reviewJobService
+                        .listFindings(
+                                userId,
+                                organizationId,
+                                repositoryId,
+                                reviewJobId,
+                                new ReviewFindingFilter(severity, effectiveCategory, filePath))
+                        .stream()
                         .map(ReviewFindingResponse::from)
                         .toList();
         return ApiResponse.ok(data, requestId());

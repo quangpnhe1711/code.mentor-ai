@@ -9,8 +9,9 @@ import org.springframework.stereotype.Component;
 
 /**
  * Persists analyzer findings for a review job. {@code organization_id} and {@code repository_id} are
- * copied from the job so every finding is scoped identically to its job. Only structured metadata is
- * stored — never a source snippet, secret value, or masked file content.
+ * copied from the job so every finding is scoped identically to its job. Besides structured metadata,
+ * each finding stores the offending line as a bounded, secret-masked snippet (the secret rule redacts
+ * the matched value); AI-provider findings carry no snippet.
  */
 @Component
 public class ReviewFindingWriter {
@@ -37,7 +38,8 @@ public class ReviewFindingWriter {
                         d.description(),
                         d.suggestion(),
                         d.ruleId(),
-                        d.confidence()))
+                        d.confidence(),
+                        d.snippet()))
                 .toList();
         findings.saveAll(rows);
         return rows.size();

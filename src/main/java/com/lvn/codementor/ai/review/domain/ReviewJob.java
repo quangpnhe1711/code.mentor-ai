@@ -42,6 +42,12 @@ public class ReviewJob extends BaseEntity {
     @Column(name = "review_type", nullable = false)
     private ReviewType reviewType;
 
+    @Column(name = "target_pull_request_number")
+    private Integer targetPullRequestNumber;
+
+    @Column(name = "target_ref")
+    private String targetRef;
+
     /** Copied verbatim from the source {@code code_analysis_inputs.input_hash} at creation time. */
     @Column(name = "input_hash", nullable = false)
     private String inputHash;
@@ -68,6 +74,18 @@ public class ReviewJob extends BaseEntity {
     @Column(name = "completed_at")
     private Instant completedAt;
 
+    @Column(name = "attempt_count", nullable = false)
+    private int attemptCount;
+
+    @Column(name = "max_attempts", nullable = false)
+    private int maxAttempts;
+
+    @Column(name = "next_run_at")
+    private Instant nextRunAt;
+
+    @Column(name = "last_failure_reason")
+    private String lastFailureReason;
+
     protected ReviewJob() {
         // for JPA
     }
@@ -79,6 +97,8 @@ public class ReviewJob extends BaseEntity {
             UUID analysisInputId,
             UUID createdByUserId,
             ReviewType reviewType,
+            Integer targetPullRequestNumber,
+            String targetRef,
             String inputHash) {
         this.organizationId = organizationId;
         this.repositoryId = repositoryId;
@@ -86,16 +106,28 @@ public class ReviewJob extends BaseEntity {
         this.analysisInputId = analysisInputId;
         this.createdByUserId = createdByUserId;
         this.reviewType = reviewType;
+        this.targetPullRequestNumber = targetPullRequestNumber;
+        this.targetRef = targetRef;
         this.inputHash = inputHash;
         this.status = ReviewJobStatus.QUEUED;
         this.totalFindings = 0;
+        this.attemptCount = 0;
+        this.maxAttempts = 3;
     }
 
     /** QUEUED → RUNNING when execution starts. */
     public void markRunning() {
         this.status = ReviewJobStatus.RUNNING;
         this.startedAt = Instant.now();
+        this.attemptCount++;
+        this.nextRunAt = null;
         this.errorReason = null;
+    }
+
+    public void markAnalyzer(String aiProvider, String aiModel, String promptVersion) {
+        this.aiProvider = aiProvider;
+        this.aiModel = aiModel;
+        this.promptVersion = promptVersion;
     }
 
     /** RUNNING → COMPLETED once findings are persisted. {@code totalFindings} must equal the row count. */
@@ -103,14 +135,34 @@ public class ReviewJob extends BaseEntity {
         this.status = ReviewJobStatus.COMPLETED;
         this.totalFindings = totalFindings;
         this.completedAt = Instant.now();
+        this.nextRunAt = null;
         this.errorReason = null;
+        this.lastFailureReason = null;
+    }
+
+    /** RUNNING → QUEUED after a retryable failure. */
+    public void markRetryQueued(String safeReason, Instant nextRunAt) {
+        this.status = ReviewJobStatus.QUEUED;
+        this.errorReason = null;
+        this.lastFailureReason = safeReason;
+        this.nextRunAt = nextRunAt;
     }
 
     /** Terminal failure. {@code reason} must be safe (no path, content, secret, or stack trace). */
     public void markFailed(String reason) {
         this.status = ReviewJobStatus.FAILED;
         this.errorReason = reason;
+        this.lastFailureReason = reason;
+        this.nextRunAt = null;
         this.completedAt = Instant.now();
+    }
+
+    public void configureRetry(int maxAttempts) {
+        this.maxAttempts = Math.max(1, maxAttempts);
+    }
+
+    public boolean canRetry() {
+        return this.attemptCount < this.maxAttempts;
     }
 
     /** Whether this job may transition to RUNNING (only a QUEUED job is runnable). */
@@ -146,6 +198,14 @@ public class ReviewJob extends BaseEntity {
         return reviewType;
     }
 
+    public Integer getTargetPullRequestNumber() {
+        return targetPullRequestNumber;
+    }
+
+    public String getTargetRef() {
+        return targetRef;
+    }
+
     public String getInputHash() {
         return inputHash;
     }
@@ -176,5 +236,21 @@ public class ReviewJob extends BaseEntity {
 
     public Instant getCompletedAt() {
         return completedAt;
+    }
+
+    public int getAttemptCount() {
+        return attemptCount;
+    }
+
+    public int getMaxAttempts() {
+        return maxAttempts;
+    }
+
+    public Instant getNextRunAt() {
+        return nextRunAt;
+    }
+
+    public String getLastFailureReason() {
+        return lastFailureReason;
     }
 }

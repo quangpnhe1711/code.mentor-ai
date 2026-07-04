@@ -7,8 +7,9 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Review-finding view returned by the API. Structured metadata only (file path, location, severity,
- * text) — never raw source content. No findings are produced in this phase, so lists are empty.
+ * Review-finding view returned by the API. Carries structured metadata plus {@code codeSnippet}: the
+ * offending line, already secret-masked (the secret rule redacts the matched value). {@code codeSnippet}
+ * is null for AI-provider findings.
  */
 public record ReviewFindingResponse(
         UUID id,
@@ -23,6 +24,7 @@ public record ReviewFindingResponse(
         String suggestion,
         String ruleId,
         BigDecimal confidence,
+        String codeSnippet,
         Instant createdAt,
         Instant updatedAt) {
 
@@ -40,6 +42,7 @@ public record ReviewFindingResponse(
                 finding.getSuggestion(),
                 finding.getRuleId(),
                 finding.getConfidence(),
+                finding.getCodeSnippet(),
                 finding.getCreatedAt(),
                 finding.getUpdatedAt());
     }
